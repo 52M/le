@@ -22,14 +22,21 @@ dns-cf-add() {
     return 1
   fi
   
+  #save the api key and email to the account conf file.
+  _saveaccountconf CF_Key "$CF_Key"
+  _saveaccountconf CF_Email "$CF_Email"
+  
   _debug "First detect the root zone"
   if ! _get_root $fulldomain ; then
     _err "invalid domain"
     return 1
   fi
+  _debug _domain_id "$_domain_id"
+  _debug _sub_domain "$_sub_domain"
+  _debug _domain "$_domain"
   
   _debug "Getting txt records"
-  _cf_rest GET "/zones/$_domain_id/dns_records?type=TXT&name=$fulldomain"
+  _cf_rest GET "/zones/${_domain_id}/dns_records?type=TXT&name=$fulldomain"
   
   if [ "$?" != "0" ] || ! printf $response | grep \"success\":true > /dev/null ; then
     _err "Error"
@@ -96,7 +103,7 @@ _get_root() {
     fi
     
     if printf $response | grep \"name\":\"$h\" ; then
-      _domain_id=$(printf $response | grep -o \"id\":\"[^\"]*\" | cut -d : -f 2 | tr -d \")
+      _domain_id=$(printf "$response" | grep -o \"id\":\"[^\"]*\" | head -1 | cut -d : -f 2 | tr -d \")
       if [ "$_domain_id" ] ; then
         _sub_domain=$(printf $domain | cut -d . -f 1-$p)
         _domain=$h
